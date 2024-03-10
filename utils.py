@@ -72,8 +72,9 @@ def initial_processing(file):
 	Initial processing for 
 	the respective datafile
 	Returns separated matrices
-	of features, and vector
-	with labels
+	of features, vector
+	with label vals, and handles for
+	the features
 	"""
 
 	credit_df = pd.read_excel(file)
@@ -81,10 +82,11 @@ def initial_processing(file):
 	Both remove the handles
 	Also don't care about "feature" ID
 	"""
+	handles = credit_df.iloc[0, 1:-1]
 	features = credit_df.iloc[1:, 1:-1].values.astype(float)
 	labels = credit_df.iloc[1:, -1].values.astype(int)  
 
-	return features, labels
+	return features, labels, handles
 
 
 def compute_λ_cov(X):
@@ -99,3 +101,27 @@ def compute_λ_cov(X):
 	λ_vals, λ_vecs = np.linalg.eig(cov_X)
 
 	return cov_X, λ_vals, λ_vecs
+
+
+"""
+To-do list
+
+- Kruskal-Wallis test to rank features
+
+- Acess redundancy with cov_matrix with
+threshold ε (i.e. if cov(i,j) > ε, eliminate
+either i or j feature based on ranking
+from Kruskal-Wallis test)
+
+- PCA(based on either kaiser or scree tests
+with n dims for projection; with the corresponding
+λ_vecs)
+
+- Also needed a plotting function
+
+- LDA...
+
+- Fisher LDA
+
+- Another minimum distance classifier
+"""

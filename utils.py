@@ -19,7 +19,7 @@ def kaiser(λ_list):
 	return PC
 
 
-def scree(λ_list, ϵ):
+def scree(λ_list, ε):
 	"""
 	Takes a list of eigenvalues
 	Returns how many dimensions
@@ -34,7 +34,7 @@ def scree(λ_list, ϵ):
 
 	for i in range(λ_list.shape[0]):
 		PC += 1
-		if abs(λ_list[i-1] - λ_list[i]) < ϵ:
+		if abs(λ_list[i-1] - λ_list[i]) < ε:
 			break
 
 	return PC
@@ -101,6 +101,56 @@ def compute_λ_cov(X):
 	λ_vals, λ_vecs = np.linalg.eig(cov_X)
 
 	return cov_X, λ_vals, λ_vecs
+
+
+def kruskal_wallis(X, labels):
+	"""
+	For the case of binary labels
+	Kruskal-Wallis test to rank
+	features.
+	Returns a vector with all scores
+	for the respective features
+	Takes X matrix with feature values
+	and labels vector to acess classes.
+
+	!Doesn't include tie discrimation yet!
+	"""
+
+	labels_stats = np.unique(labels, return_counts=True)
+	Hs = []
+	R_avg = np.sum(np.arange(1, X.shape[0] + 1))/X.shape[0] #avg rank
+	for i in range(X.shape[1]):
+		"""
+		Initialize ranks regarding each class
+		"""
+		Rs = [0, 0]
+
+		X_updated = np.column_stack((X[:, i],labels))
+		"""
+		Sort according to feature vals ([0])
+		"""
+		X_updated = X_updated[X_updated[:, 0].argsort()]
+		
+		for j in range(X.shape[0]):
+			if X_updated[j,0] == labels_stats[0][0]:
+				Rs[0] += j + 1
+			else:
+				Rs[1] += j + 1
+		"""
+		Getting the average ranks
+		"""
+		Rs[0] /= labels_stats[1][0]
+		Rs[1] /= labels_stats[1][1]
+
+		H = 0
+		for k in range(len(labels_stats[0])):
+			H += labels_stats[1][k] * (Rs[k] - R_avg)**2
+
+		H *= 12/(X.shape[0] * (X.shape[0] + 1))
+		Hs.append(H)
+	
+	return Hs
+
 
 
 """

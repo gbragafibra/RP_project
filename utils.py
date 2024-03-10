@@ -152,6 +152,34 @@ def kruskal_wallis(X, labels):
 	return Hs
 
 
+def redundancy_check(X, ε, labels):
+	"""
+	Checking for redundancy
+	between features.
+	Takes a matrix X, a 
+	threshold ε (i.e. ε = 0.95)
+	to possibly eliminate some feature.
+	Such is done also taking into account
+	the scores from Kruskal-Wallis.
+	Returns an updated matrix.
+	"""
+	scores = kruskal_wallis(X, labels)
+	cov_X = compute_λ_cov(X)[0]
+
+	redundant_features = []
+
+	for i in range(cov_X.shape[0]):
+		for j in range(i + 1, cov_X.shape[1]):
+			if np.abs(cov_X[i,j]) > ε:
+				if scores[i] < scores[j]:
+					redundant_features.append(i)
+				else:
+					redundant_features.append(j)
+
+	X_new = np.delete(X, redundant_features, axis = 1)
+
+	return X_new
+
 
 """
 To-do list

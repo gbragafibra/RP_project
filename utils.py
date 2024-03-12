@@ -183,16 +183,45 @@ def redundancy_check(X, ε, labels):
 
 def mdc_euclidean(X, labels):
 	"""
-	Now "fast" class separation
+	Euclidean minimum distance classifier
+	Takes a matrix X, and respective labels
+	Returns relative errors to each class
+	and a total one
 	"""
 
 	X_all = np.column_stack((X, labels))
-	X_all2 = {c: X[X[:, -1] == c] for c in labels}
+	X_all2 = {c: X_all[X_all[:, -1] == c] for c in labels}
+
+	μ0 = []
+	μ1 = []
+	for i in range(X_all.shape[1] - 1):
+		μ0.append(np.mean(X_all2[0].T[i]))
+		μ1.append(np.mean(X_all2[1].T[i]))
+
+	μ0 = np.array(μ0)
+	μ1 = np.array(μ1)
+
+	def g1(x, μ1):
+	    return μ1.T@x - 0.5 * (μ1.T@μ1)
+
+	def g2(x, μ2):
+	    return μ2.T@x - 0.5 * (μ2.T@μ2)
 
 
+	ω0_wrong = 0
+	ω1_wrong = 0
 
+	for i in range(X.shape[0]):
+		if g1(X[i], μ0) > g2(X[i], μ1) and X_all[i][-1] != 0:
+			ω0_wrong += 1
+		elif g2(X[i], μ1) > g1(X[i], μ0) and X_all[i][-1] != 1:
+			ω1_wrong += 1
+	
+	ε_ω0_rel = ω0_wrong/X.shape[0]
+	ε_ω1_rel = ω1_wrong/X.shape[0]
+	total_ε = (ω0_wrong + ω1_wrong)/X.shape[0]
 
-	return X_all2
+	return ε_ω0_rel, ε_ω1_rel, total_ε
 
 
 """

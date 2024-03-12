@@ -183,18 +183,16 @@ def redundancy_check(X, ε, labels):
 
 def mdc_euclidean(X, labels):
 	"""
-	At class separation
-	Too slow!
+	Now "fast" class separation
 	"""
 
-	X_all = []
-
-	for i in range(X.shape[1]):
-		X_all.append({c: X[X[:, i] == c] for c in labels})
+	X_all = np.column_stack((X, labels))
+	X_all2 = {c: X[X[:, -1] == c] for c in labels}
 
 
 
-	return X_all
+
+	return X_all2
 
 
 """

@@ -181,6 +181,22 @@ def redundancy_check(X, ε, labels):
 	return X_new
 
 
+def mdc_euclidean(X, labels):
+	"""
+	At class separation
+	Too slow!
+	"""
+
+	X_all = []
+
+	for i in range(X.shape[1]):
+		X_all.append({c: X[X[:, i] == c] for c in labels})
+
+
+
+	return X_all
+
+
 """
 To-do list
 

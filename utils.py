@@ -11,6 +11,11 @@ def kaiser(λ_list):
 
 	PC = 0
 
+	"""
+	Need to order λ_list (descending)
+	"""
+	λ_list = λ_list[::1]
+
 	for i in range(λ_list.shape[0]):
 		PC += 1
 		if λ_list[i] < 1:
@@ -31,6 +36,11 @@ def scree(λ_list, ε):
 	"""
 
 	PC = 0
+
+	"""
+	Need to order λ_list (descending)
+	"""
+	λ_list = λ_list[::1]
 
 	for i in range(λ_list.shape[0]):
 		PC += 1
@@ -58,6 +68,11 @@ def kept_var(λ_list, n):
 	Computes the kept variance
 	for n amount of features
 	"""
+
+	"""
+	Need to order λ_list (descending)
+	"""
+	λ_list = λ_list[::1]
 
 	kept_var = 0 
 

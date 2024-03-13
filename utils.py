@@ -279,6 +279,50 @@ def mcd_mahalanobis(X, labels):
 	return ε_ω0_rel, ε_ω1_rel, total_ε
 
 
+
+def PCA(X, test = None):
+	"""
+	Projects what's initially
+	X into a smaller amount of
+	dimensions taking into
+	account what test is chosen
+	(kaiser, scree)
+	"""
+
+	λ_vals, λ_vecs = compute_λ_cov(X)[1], compute_λ_cov(X)[2]
+
+	"""
+	Get the number of
+	dimensions to project,
+	either with kaiser
+	or scree tests.
+	"""
+	if test == kaiser:
+		dims = kaiser(λ_vals)
+	elif test == scree:
+		dims = scree(λ_vals, 1)
+
+	"""
+	In descending order
+	Get the indexes of the
+	largest λ_vals
+	"""
+	λ_id = λ_vals.argsort()[::-1]
+	"""
+	Updates the λ_vecs given the indexes
+	obtained before, and also taking into
+	account the dims originated by each 
+	respective test
+	"""
+	λ_vecs_updated = λ_vecs[:, λ_id][:, :dims]
+
+	#Projection
+	X_new = np.dot(scale_σ(X), λ_vecs_updated)
+
+
+	return X_new
+
+
 """
 To-do list
 

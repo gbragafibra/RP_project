@@ -203,25 +203,14 @@ def class_separation(X, labels):
 	return X_all, X_all2
 
 
-def mdc_euclidean(X, labels):
+def mdc_euclidean(X, labels, mode = "train", μ0 = None, μ1 = None):
 	"""
 	Euclidean minimum distance classifier
 	Takes a matrix X, and respective labels
 	Returns relative errors to each class
 	and a total one
+	Includes training and testing modes.
 	"""
-
-	X_all, X_all2 = class_separation(X, labels)
-
-	μ0 = []
-	μ1 = []
-	for i in range(X_all.shape[1] - 1):
-		μ0.append(np.mean(X_all2[0].T[i]))
-		μ1.append(np.mean(X_all2[1].T[i]))
-
-	μ0 = np.array(μ0)
-	μ1 = np.array(μ1)
-
 	def g1(x, μ1):
 	    return μ1.T@x - 0.5 * (μ1.T@μ1)
 
@@ -229,47 +218,59 @@ def mdc_euclidean(X, labels):
 	    return μ2.T@x - 0.5 * (μ2.T@μ2)
 
 
-	ω0_wrong = 0
-	ω1_wrong = 0
+	if mode == "train":
 
-	for i in range(X.shape[0]):
-		if g1(X[i], μ0) > g2(X[i], μ1) and X_all[i][-1] != 0:
-			ω0_wrong += 1
-		elif g2(X[i], μ1) > g1(X[i], μ0) and X_all[i][-1] != 1:
-			ω1_wrong += 1
-	
-	ε_ω0_rel = ω0_wrong/X.shape[0]
-	ε_ω1_rel = ω1_wrong/X.shape[0]
-	total_ε = (ω0_wrong + ω1_wrong)/X.shape[0]
+		X_all, X_all2 = class_separation(X, labels)
 
-	return ε_ω0_rel, ε_ω1_rel, total_ε
+		μ0 = []
+		μ1 = []
+		for i in range(X_all.shape[1] - 1):
+			μ0.append(np.mean(X_all2[0].T[i]))
+			μ1.append(np.mean(X_all2[1].T[i]))
 
+		μ0 = np.array(μ0)
+		μ1 = np.array(μ1)
 
-def mcd_mahalanobis(X, labels):
+		ω0_wrong = 0
+		ω1_wrong = 0
+
+		for i in range(X.shape[0]):
+			if g1(X[i], μ0) > g2(X[i], μ1) and X_all[i][-1] != 0:
+				ω0_wrong += 1
+			elif g2(X[i], μ1) > g1(X[i], μ0) and X_all[i][-1] != 1:
+				ω1_wrong += 1
+		
+		ε_ω0_rel = ω0_wrong/X.shape[0]
+		ε_ω1_rel = ω1_wrong/X.shape[0]
+		total_ε = (ω0_wrong + ω1_wrong)/X.shape[0]
+
+		return ε_ω0_rel, ε_ω1_rel, total_ε, μ0, μ1
+
+	elif mode == "test":
+		ω0_wrong = 0
+		ω1_wrong = 0
+
+		for i in range(X.shape[0]):
+			if g1(X[i], μ0) > g2(X[i], μ1) and labels[i] != 0:
+				ω0_wrong += 1
+			elif g2(X[i], μ1) > g1(X[i], μ0) and labels[i] != 1:
+				ω1_wrong += 1
+		
+		ε_ω0_rel = ω0_wrong/X.shape[0]
+		ε_ω1_rel = ω1_wrong/X.shape[0]
+		total_ε = (ω0_wrong + ω1_wrong)/X.shape[0]
+
+		return ε_ω0_rel, ε_ω1_rel, total_ε
+
+def mcd_mahalanobis(X, labels, mode = "train", μ0 = None, μ1 = None,
+ C_inv_avg = None):
 	"""
 	Mahalanobis minimum distance classifier
 	Takes a matrix X, and respective labels
 	Returns relative errors to each class
-	and a total one
+	and a total one.
+	Includes training and testing modes.
 	"""
-
-	X_all, X_all2 = class_separation(X, labels)
-
-	data_ω0 = X_all2[0][:,:-1]
-	data_ω1 = X_all2[1][:,:-1]
-	C_ω0 = np.cov(data_ω0.T)
-	C_ω1 = np.cov(data_ω1.T)
-	C_inv_avg = np.linalg.inv((C_ω0 + C_ω1)/2)
-
-	μ0 = []
-	μ1 = []
-	for i in range(X_all.shape[1] - 1):
-		μ0.append(np.mean(X_all2[0].T[i]))
-		μ1.append(np.mean(X_all2[1].T[i]))
-
-	μ0 = np.array(μ0)
-	μ1 = np.array(μ1)
-
 	def g1(x, μ0, C_inv_avg): 
 
 	    return (μ0@C_inv_avg@x - 0.5 * (μ0@C_inv_avg@μ0))
@@ -278,20 +279,57 @@ def mcd_mahalanobis(X, labels):
 
 	    return (μ1@C_inv_avg@x - 0.5 * (μ1@C_inv_avg@μ1))
 
-	ω0_wrong = 0
-	ω1_wrong = 0
 
-	for i in range(X.shape[0]):
-		if g1(X[i], μ0, C_inv_avg) > g2(X[i], μ1, C_inv_avg) and X_all[i][-1] != 0:
-			ω0_wrong += 1
-		elif g2(X[i], μ1, C_inv_avg) > g1(X[i], μ0, C_inv_avg) and X_all[i][-1] != 1:
-			ω1_wrong += 1
-	
-	ε_ω0_rel = ω0_wrong/X.shape[0]
-	ε_ω1_rel = ω1_wrong/X.shape[0]
-	total_ε = (ω0_wrong + ω1_wrong)/X.shape[0]
+	if mode == "train":
+		X_all, X_all2 = class_separation(X, labels)
 
-	return ε_ω0_rel, ε_ω1_rel, total_ε
+		data_ω0 = X_all2[0][:,:-1]
+		data_ω1 = X_all2[1][:,:-1]
+		C_ω0 = np.cov(data_ω0.T)
+		C_ω1 = np.cov(data_ω1.T)
+		C_inv_avg = np.linalg.inv((C_ω0 + C_ω1)/2)
+
+		μ0 = []
+		μ1 = []
+		for i in range(X_all.shape[1] - 1):
+			μ0.append(np.mean(X_all2[0].T[i]))
+			μ1.append(np.mean(X_all2[1].T[i]))
+
+		μ0 = np.array(μ0)
+		μ1 = np.array(μ1)
+
+		ω0_wrong = 0
+		ω1_wrong = 0
+
+		for i in range(X.shape[0]):
+			if g1(X[i], μ0, C_inv_avg) > g2(X[i], μ1, C_inv_avg) and X_all[i][-1] != 0:
+				ω0_wrong += 1
+			elif g2(X[i], μ1, C_inv_avg) > g1(X[i], μ0, C_inv_avg) and X_all[i][-1] != 1:
+				ω1_wrong += 1
+		
+		ε_ω0_rel = ω0_wrong/X.shape[0]
+		ε_ω1_rel = ω1_wrong/X.shape[0]
+		total_ε = (ω0_wrong + ω1_wrong)/X.shape[0]
+
+		return ε_ω0_rel, ε_ω1_rel, total_ε, μ0, μ1, C_inv_avg
+
+	elif mode == "test":
+
+		ω0_wrong = 0
+		ω1_wrong = 0
+
+		for i in range(X.shape[0]):
+			if g1(X[i], μ0, C_inv_avg) > g2(X[i], μ1, C_inv_avg) and labels[i] != 0:
+				ω0_wrong += 1
+			elif g2(X[i], μ1, C_inv_avg) > g1(X[i], μ0, C_inv_avg) and labels[i] != 1:
+				ω1_wrong += 1
+		
+		ε_ω0_rel = ω0_wrong/X.shape[0]
+		ε_ω1_rel = ω1_wrong/X.shape[0]
+		total_ε = (ω0_wrong + ω1_wrong)/X.shape[0]
+
+		return ε_ω0_rel, ε_ω1_rel, total_ε
+
 
 
 
@@ -337,6 +375,44 @@ def PCA(X, test = None):
 
 	return X_new
 
+
+def run(X, labels, n_sims, classifier = None):
+	"""
+	Main running loop with
+	a certain classifier.
+	Also generates statistics
+	for the total error for a
+	given amount of simulations.
+	"""
+	train_size = int(0.7 * X.shape[0])
+	εs_train = []
+	εs_test = []
+
+	for _ in range(n_sims):
+		indices = np.random.permutation(X.shape[0])
+		train_indices = indices[:train_size]
+		test_indices = indices[train_size:]
+		X_train = X[train_indices]
+		X_test = X[test_indices]
+		y_train = labels[train_indices]
+		y_test = labels[test_indices]
+
+		if classifier == "euclidean":
+			μ0, μ1 = mdc_euclidean(X_train, y_train)[3:]
+			εs_train.append(mdc_euclidean(X_train, y_train)[2])
+			εs_test.append(mdc_euclidean(X_test, y_test, mode = "test",\
+				μ0=μ0, μ1=μ1))
+		elif classifier == "mahalanobis":
+			μ0, μ1, C_inv_avg = mcd_mahalanobis(X_train, y_train)[3:]
+			εs_train.append(mcd_mahalanobis(X_train, y_train)[2])
+			εs_test.append(mcd_mahalanobis(X_test, y_test, mode = "test",\
+			 μ0=μ0, μ1=μ1, C_inv_avg=C_inv_avg))
+	
+
+	print(f"Training error: {np.mean(εs_train)} ± {np.std(εs_train)}")
+	print(f"Testing error: {np.mean(εs_test)} ± {np.std(εs_test)}")
+
+	return 
 
 """
 To-do list

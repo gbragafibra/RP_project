@@ -431,7 +431,7 @@ def normality_check(X, handles, α):
 
 	for i in range(X.shape[1]):
 		feature = X[:, i]
-		_, p_val = kstest(feature, "norm") #Gaussian dist
+		p_val = kstest(feature, "norm")[1] #Gaussian dist
 		
 		print(f"For {handles[i]}:")
 		if p_val > α:

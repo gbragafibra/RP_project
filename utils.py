@@ -418,7 +418,7 @@ def run(X, labels, n_sims, classifier = None):
 	print(f"Training error: {np.mean(εs_train)} ± {np.std(εs_train)}")
 	print(f"Testing error: {np.mean(εs_test)} ± {np.std(εs_test)}")
 
-	return 
+	pass 
 
 def normality_check(X, handles, α):
 	"""
@@ -443,7 +443,7 @@ def normality_check(X, handles, α):
 		plt.title(f"Feature {handles[i]}")
 		plt.show()
 
-	return 				
+	pass 				
 
 
 

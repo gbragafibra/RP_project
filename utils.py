@@ -1,5 +1,11 @@
 import numpy as np 
 import pandas as pd 
+import matplotlib.pyplot as plt 
+from scipy.stats import kstest
+"""
+kstest more appropriate for
+larger sample sizes
+"""
 
 def kaiser(λ_list):
 	"""
@@ -413,6 +419,34 @@ def run(X, labels, n_sims, classifier = None):
 	print(f"Testing error: {np.mean(εs_test)} ± {np.std(εs_test)}")
 
 	return 
+
+def normality_check(X, handles, α):
+	"""
+	Checks normality of each feature
+	with the Kolmogorov-Smirnov test
+	(using a significance threshold α),
+	displaying also the respective
+	violinplot. 
+	"""
+
+	for i in range(X.shape[1]):
+		feature = X[:, i]
+		_, p_val = kstest(feature, "norm") #Gaussian dist
+		
+		print(f"For {handles[i]}:")
+		if p_val > α:
+			print("Follows gaussian dist; failed to reject H0.")
+		else:
+			print("Not normally distributed; rejected H0.")
+
+		plt.violinplot(feature)
+		plt.title(f"Feature {handles[i]}")
+		plt.show()
+
+	return 				
+
+
+
 
 """
 To-do list

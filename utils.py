@@ -446,6 +446,59 @@ def normality_check(X, handles, α):
 	pass 				
 
 
+def LDA(X, labels):
+	"""
+	Projects what's initially
+	matrix X with whatever
+	amount of features
+	into a 1D space.
+	Returns transformed matrix.
+	"""
+
+	X_all, X_all2 = class_separation(X, labels)
+
+	μ0 = []
+	μ1 = []
+	for i in range(X_all.shape[1] - 1):
+		μ0.append(np.mean(X_all2[0].T[i]))
+		μ1.append(np.mean(X_all2[1].T[i]))
+
+	μ0 = np.array(μ0)
+	μ1 = np.array(μ1)
+
+	"""
+	Computing the within the class
+	scatter matrix (two classes)
+	"""
+	S0 = np.zeros((X.shape[1], X.shape[1]))
+	S1 = np.zeros((X.shape[1], X.shape[1]))
+	
+	for i in range(X_all2[0].shape[0]):
+		S0 += np.dot((X_all2[0][i,:-1] - μ0),\
+			(X_all2[0][i,:-1] - μ0).T) 
+		
+	for i in range(X_all2[1].shape[0]):
+		S1 += np.dot((X_all2[1][i,:-1] - μ0),\
+			(X_all2[1][i,:-1] - μ0).T)
+
+	Sw = S0 + S1
+
+	"""
+	Try first with invert.
+	If Sw is singular,
+	run with pseudo invert.
+	"""
+	try:
+		np.linalg.inv(Sw)
+		w = np.dot(np.linalg.inv(Sw),(μ0 - μ1))
+	except np.linalg.LinAlgError:
+		w = np.dot(np.linalg.pinv(Sw),(μ0 - μ1))
+	
+	w = w.reshape(w.shape[0],1)
+	X_new = np.dot(w.T, X.T)
+
+	return X_new.T
+
 
 
 """

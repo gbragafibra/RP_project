@@ -1,6 +1,7 @@
 import numpy as np 
 import pandas as pd 
 import matplotlib.pyplot as plt 
+from sklearn.model_selection import train_test_split
 from scipy.stats import kstest
 """
 kstest more appropriate for
@@ -390,11 +391,18 @@ def run(X, labels, n_sims, classifier = None):
 	for the total error for a
 	given amount of simulations.
 	"""
-	train_size = int(0.7 * X.shape[0])
+
+	#train_size = int(0.7 * X.shape[0]) #If to do without sklearn
 	εs_train = []
 	εs_test = []
 
 	for _ in range(n_sims):
+		X_train, X_test, y_train, y_test = train_test_split(X, labels, test_size=0.3, stratify=labels)
+		"""
+		Below without using sklearn.
+		Although it doesn't stratify
+		"""
+		"""
 		indices = np.random.permutation(X.shape[0])
 		train_indices = indices[:train_size]
 		test_indices = indices[train_size:]
@@ -402,6 +410,7 @@ def run(X, labels, n_sims, classifier = None):
 		X_test = X[test_indices]
 		y_train = labels[train_indices]
 		y_test = labels[test_indices]
+		"""
 
 		if classifier == "euclidean":
 			μ0, μ1 = mdc_euclidean(X_train, y_train)[3:]

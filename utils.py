@@ -253,6 +253,22 @@ def mdc_euclidean(X, labels, mode = "train", μ0 = None, μ1 = None):
 
 		return ε_ω0_rel, ε_ω1_rel, total_ε, μ0, μ1
 
+	elif mode == "val":
+		ω0_wrong = 0
+		ω1_wrong = 0
+
+		for i in range(X.shape[0]):
+			if g1(X[i], μ0) > g2(X[i], μ1) and labels[i] != 0:
+				ω0_wrong += 1
+			elif g2(X[i], μ1) > g1(X[i], μ0) and labels[i] != 1:
+				ω1_wrong += 1
+		
+		ε_ω0_rel = ω0_wrong/X.shape[0]
+		ε_ω1_rel = ω1_wrong/X.shape[0]
+		total_ε = (ω0_wrong + ω1_wrong)/X.shape[0]
+
+		return ε_ω0_rel, ε_ω1_rel, total_ε	
+
 	elif mode == "test":
 		ω0_wrong = 0
 		ω1_wrong = 0
@@ -320,6 +336,25 @@ def mcd_mahalanobis(X, labels, mode = "train", μ0 = None, μ1 = None,
 
 		return ε_ω0_rel, ε_ω1_rel, total_ε, μ0, μ1, C_inv_avg
 
+	elif mode == "val":
+
+		ω0_wrong = 0
+		ω1_wrong = 0
+
+		for i in range(X.shape[0]):
+			if g1(X[i], μ0, C_inv_avg) > g2(X[i], μ1, C_inv_avg) and labels[i] != 0:
+				ω0_wrong += 1
+			elif g2(X[i], μ1, C_inv_avg) > g1(X[i], μ0, C_inv_avg) and labels[i] != 1:
+				ω1_wrong += 1
+		
+		ε_ω0_rel = ω0_wrong/X.shape[0]
+		ε_ω1_rel = ω1_wrong/X.shape[0]
+		total_ε = (ω0_wrong + ω1_wrong)/X.shape[0]
+
+		return ε_ω0_rel, ε_ω1_rel, total_ε
+
+
+
 	elif mode == "test":
 
 		ω0_wrong = 0
@@ -383,7 +418,8 @@ def PCA(X, test = None):
 	return X_new
 
 
-def run(X, labels, n_sims, classifier = None):
+def run(X, labels, n_sims, train_ω = None,
+ val_ω = None, classifier = None, testing = False):
 	"""
 	Main running loop with
 	a certain classifier.
@@ -392,8 +428,10 @@ def run(X, labels, n_sims, classifier = None):
 	given amount of simulations.
 	"""
 
-	train_size = int(0.7 * X.shape[0]) #If to do without sklearn
+	train_size = int(train_ω * X.shape[0]) #If to do without sklearn
+	val_size = int(val_ω * train_size)
 	εs_train = []
+	εs_val = []
 	εs_test = []
 
 	for _ in range(n_sims):
@@ -404,10 +442,14 @@ def run(X, labels, n_sims, classifier = None):
 		"""
 
 		indices = np.random.permutation(X.shape[0])
-		train_indices = indices[:train_size]
+		train_val_indices = indices[:train_size]
+		val_indices = train_val_indices[:val_size]
+		train_indices = train_val_indices[val_size:]
 		test_indices = indices[train_size:]
 		X_train = X[train_indices]
 		X_test = X[test_indices]
+		X_val = X[val_indices]
+		y_val = labels[val_indices]
 		y_train = labels[train_indices]
 		y_test = labels[test_indices]
 
@@ -415,17 +457,31 @@ def run(X, labels, n_sims, classifier = None):
 		if classifier == "euclidean":
 			μ0, μ1 = mdc_euclidean(X_train, y_train)[3:]
 			εs_train.append(mdc_euclidean(X_train, y_train)[2])
-			εs_test.append(mdc_euclidean(X_test, y_test, mode = "test",\
+			εs_val.append(mdc_euclidean(X_val, y_val, mode = "val",\
 				μ0=μ0, μ1=μ1))
 		elif classifier == "mahalanobis":
 			μ0, μ1, C_inv_avg = mcd_mahalanobis(X_train, y_train)[3:]
 			εs_train.append(mcd_mahalanobis(X_train, y_train)[2])
-			εs_test.append(mcd_mahalanobis(X_test, y_test, mode = "test",\
+			εs_val.append(mcd_mahalanobis(X_val, y_val, mode = "val",\
 			 μ0=μ0, μ1=μ1, C_inv_avg=C_inv_avg))
 	
+		if testing == True:
+			if classifier == "euclidean":
+				μ0, μ1 = mdc_euclidean(X_train, y_train)[3:]
+				εs_test.append(mdc_euclidean(X_test, y_test, mode = "test",\
+					μ0=μ0, μ1=μ1))
+			elif classifier == "mahalanobis":
+				μ0, μ1, C_inv_avg = mcd_mahalanobis(X_train, y_train)[3:]
+				εs_test.append(mcd_mahalanobis(X_test, y_test, mode = "test",\
+				 μ0=μ0, μ1=μ1, C_inv_avg=C_inv_avg))
+
 
 	print(f"Training error: {np.mean(εs_train)} ± {np.std(εs_train)}")
-	print(f"Testing error: {np.mean(εs_test)} ± {np.std(εs_test)}")
+	print(f"Validation error: {np.mean(εs_val)} ± {np.std(εs_val)}")
+
+	if testing == True:
+		print(f"Testing error: {np.mean(εs_test)} ± {np.std(εs_test)}")
+
 
 	pass 
 

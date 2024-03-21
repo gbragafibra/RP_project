@@ -578,14 +578,10 @@ def LDA(X, labels):
 
 	X_all, X_all2 = class_separation(X, labels)
 
-	μ0 = []
-	μ1 = []
-	for i in range(X_all.shape[1] - 1):
-		μ0.append(np.mean(X_all2[0].T[i]))
-		μ1.append(np.mean(X_all2[1].T[i]))
+	μ0 = np.mean(X_all2[0].T[:-1], axis = 1)
+	μ1 = np.mean(X_all2[1].T[:-1], axis = 1)
 
-	μ0 = np.array(μ0)
-	μ1 = np.array(μ1)
+
 
 	"""
 	Computing the within the class

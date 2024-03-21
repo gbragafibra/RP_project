@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd 
 import matplotlib.pyplot as plt 
 import time #For timing purposes
+from sklearn.metrics import roc_curve, auc
 #from sklearn.model_selection import train_test_split #If want to use sklearn
 from scipy.stats import kstest
 """
@@ -277,7 +278,13 @@ def mdc_euclidean(X, labels, mode = "train", μ0 = None, μ1 = None):
 		ω0_wrong = 0
 		ω1_wrong = 0
 
+		"""
+		To get ROC and compute AUC
+		"""
+		ω_scores = []
 		for i in range(X.shape[0]):
+			
+			ω_scores.append(g(X[i], μ1) - g(X[i], μ0))
 			if g(X[i], μ0) > g(X[i], μ1) and labels[i] != 0:
 				ω0_wrong += 1
 			elif g(X[i], μ1) > g(X[i], μ0) and labels[i] != 1:
@@ -290,7 +297,7 @@ def mdc_euclidean(X, labels, mode = "train", μ0 = None, μ1 = None):
 		C = np.array([[X_all2[1].shape[0],ω1_wrong],\
 		[ω0_wrong,X_all2[0].shape[0]]]) #Confusion matrix
 
-		return ε_ω0_rel, ε_ω1_rel, total_ε, C
+		return ε_ω0_rel, ε_ω1_rel, total_ε, C, ω_scores
 
 def mcd_mahalanobis(X, labels, mode = "train", μ0 = None, μ1 = None,
  C_inv_avg = None):
@@ -361,7 +368,14 @@ def mcd_mahalanobis(X, labels, mode = "train", μ0 = None, μ1 = None,
 		ω0_wrong = 0
 		ω1_wrong = 0
 
+		"""
+		To get ROC and compute AUC
+		"""
+		ω_scores = []
 		for i in range(X.shape[0]):
+			
+			ω_scores.append(g(X[i], μ1, C_inv_avg) - g(X[i], μ0, C_inv_avg))
+
 			if g(X[i], μ0, C_inv_avg) > g(X[i], μ1, C_inv_avg) and labels[i] != 0:
 				ω0_wrong += 1
 			elif g(X[i], μ1, C_inv_avg) > g(X[i], μ0, C_inv_avg) and labels[i] != 1:
@@ -374,7 +388,7 @@ def mcd_mahalanobis(X, labels, mode = "train", μ0 = None, μ1 = None,
 		C = np.array([[X_all2[1].shape[0],ω1_wrong],\
 		[ω0_wrong,X_all2[0].shape[0]]]) #Confusion matrix
 
-		return ε_ω0_rel, ε_ω1_rel, total_ε, C
+		return ε_ω0_rel, ε_ω1_rel, total_ε, C, ω_scores
 
 
 
@@ -423,7 +437,8 @@ def PCA(X, test = None):
 
 
 def run(X, labels, n_sims, train_ω = None,
- val_ω = None, classifier = None, testing = False):
+ val_ω = None, classifier = None, testing = False,
+ plot = False):
 	"""
 	Main running loop with
 	a certain classifier.
@@ -437,7 +452,7 @@ def run(X, labels, n_sims, train_ω = None,
 	val_size = int(val_ω * train_size)
 	εs_train = []
 	εs_val = []
-	εs_test = []
+
 
 
 	"""
@@ -485,26 +500,26 @@ def run(X, labels, n_sims, train_ω = None,
 			εs_val.append(mcd_mahalanobis(X_val, y_val, mode = "val",\
 			 μ0=μ0, μ1=μ1, C_inv_avg=C_inv_avg)[2])
 	
-		if testing == True:
-			if classifier == "euclidean":
-				μ0, μ1 = mdc_euclidean(X_train, y_train)[3:]
-				#Returning global error, and confusion matrix
-				ε, C = mdc_euclidean(X_test, y_test, mode = "test",\
-					μ0=μ0, μ1=μ1)[2:]
-				εs_test.append(ε)
-
-			elif classifier == "mahalanobis":
-				μ0, μ1, C_inv_avg = mcd_mahalanobis(X_train, y_train)[3:]
-				#Returning global error, and confusion matrix
-				ε, C = mcd_mahalanobis(X_test, y_test, mode = "test",\
-				 μ0=μ0, μ1=μ1, C_inv_avg=C_inv_avg)[2:]
-				εs_test.append(ε)
 
 	print(f"Training error: {np.mean(εs_train):.4f} ± {np.std(εs_train):.4f}")
 	print(f"Validation error: {np.mean(εs_val):.4f} ± {np.std(εs_val):.4f}")
 
 	if testing == True:
-		print(f"Testing error: {np.mean(εs_test):.4f} ± {np.std(εs_test):.4f}")
+		if classifier == "euclidean":
+			μ0, μ1 = mdc_euclidean(X_train, y_train)[3:]
+			#Returning global error, and confusion matrix
+			ε_test, C, ω_scores = mdc_euclidean(X_test, y_test, mode = "test",\
+				μ0=μ0, μ1=μ1)[2:]
+			
+
+		elif classifier == "mahalanobis":
+			μ0, μ1, C_inv_avg = mcd_mahalanobis(X_train, y_train)[3:]
+			#Returning global error, and confusion matrix
+			ε_test, C, ω_scores = mcd_mahalanobis(X_test, y_test, mode = "test",\
+			 μ0=μ0, μ1=μ1, C_inv_avg=C_inv_avg)[2:]
+			
+
+		print(f"Testing error: {ε_test:.4f}")
 		"""
 		In the form
 		[TP FN
@@ -513,9 +528,21 @@ def run(X, labels, n_sims, train_ω = None,
 		print(f"Confusion matrix: {C}")
 		SS = C[0,0]/(C[0,0] + C[0,1]) #Sensitivity
 		SP = C[1,1]/(C[1,1] + C[1,0]) #Specificity
-		print(f"Sensitivity: {SS}")
-		print(f"Specificity: {SP}")
-	
+		print(f"Sensitivity: {SS:.4f}")
+		print(f"Specificity: {SP:.4f}")
+
+		fpr, tpr, thresholds = roc_curve(y_test, ω_scores)
+		AUC = auc(fpr, tpr)
+		print(f"AUC: {AUC:.4f}")
+
+		if plot == True:
+			plt.plot(fpr, tpr, "k",
+				label = f"ROC (AUC = {AUC:.4f})")
+			plt.plot([0,1],[0,1], "r--",
+				label = "Chance line")
+			plt.xlabel("FPR")
+			plt.ylabel("TPR")
+			plt.legend()
 
 
 	τ_f = time.time()

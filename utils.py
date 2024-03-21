@@ -1,6 +1,7 @@
 import numpy as np 
 import pandas as pd 
 import matplotlib.pyplot as plt 
+import time #For timing purposes
 #from sklearn.model_selection import train_test_split #If want to use sklearn
 from scipy.stats import kstest
 """
@@ -426,6 +427,7 @@ def run(X, labels, n_sims, train_ω = None,
 	for the total error for a
 	given amount of simulations.
 	"""
+	τ_i = time.time()
 
 	train_size = int(train_ω * X.shape[0]) #If to do without sklearn
 	val_size = int(val_ω * train_size)
@@ -433,24 +435,32 @@ def run(X, labels, n_sims, train_ω = None,
 	εs_val = []
 	εs_test = []
 
+
+	"""
+	Want this before the loop
+	accounting for multiple 
+	simulations.
+	Don't want my testing set changing 
+	from simulation to simulation
+	"""
+	indices = np.random.permutation(X.shape[0])
+	test_indices = indices[train_size:]
+	X_test = X[test_indices]
+	y_test = labels[test_indices]
 	for _ in range(n_sims):
 		#X_train, X_test, y_train, y_test = train_test_split(X, labels, test_size=0.3, stratify=labels)
 		"""
 		Below without using sklearn.
 		Although it doesn't stratify
 		"""
-
-		indices = np.random.permutation(X.shape[0])
-		train_val_indices = indices[:train_size]
+		train_val_indices = np.random.permutation(indices[:train_size])
 		val_indices = train_val_indices[:val_size]
 		train_indices = train_val_indices[val_size:]
-		test_indices = indices[train_size:]
 		X_train = X[train_indices]
-		X_test = X[test_indices]
 		X_val = X[val_indices]
-		y_val = labels[val_indices]
 		y_train = labels[train_indices]
-		y_test = labels[test_indices]
+		y_val = labels[val_indices]
+		
 
 
 		if classifier == "euclidean":
@@ -475,13 +485,15 @@ def run(X, labels, n_sims, train_ω = None,
 				 μ0=μ0, μ1=μ1, C_inv_avg=C_inv_avg))
 
 
-	print(f"Training error: {np.mean(εs_train)} ± {np.std(εs_train)}")
-	print(f"Validation error: {np.mean(εs_val)} ± {np.std(εs_val)}")
+	print(f"Training error: {np.mean(εs_train):.4f} ± {np.std(εs_train):.4f}")
+	print(f"Validation error: {np.mean(εs_val):.4f} ± {np.std(εs_val):.4f}")
 
 	if testing == True:
-		print(f"Testing error: {np.mean(εs_test)} ± {np.std(εs_test)}")
+		print(f"Testing error: {np.mean(εs_test):.4f} ± {np.std(εs_test):.4f}")
 
-
+	τ_f = time.time()
+	Δτ = τ_f - τ_i
+	print(f"Execution time: {Δτ:.2f}")
 	pass 
 
 def normality_check(X, handles, α):
@@ -562,28 +574,3 @@ def LDA(X, labels):
 	X_new = np.dot(w.T, X.T)
 
 	return X_new.T
-
-
-
-"""
-To-do list
-
-- Kruskal-Wallis test to rank features
-
-- Acess redundancy with cov_matrix with
-threshold ε (i.e. if cov(i,j) > ε, eliminate
-either i or j feature based on ranking
-from Kruskal-Wallis test)
-
-- PCA(based on either kaiser or scree tests
-with n dims for projection; with the corresponding
-λ_vecs)
-
-- Also needed a plotting function
-
-- LDA...
-
-- Fisher LDA
-
-- Another minimum distance classifier
-"""

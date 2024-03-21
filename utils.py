@@ -228,10 +228,10 @@ def mdc_euclidean(X, labels, mode = "train", μ0 = None, μ1 = None):
 	def g(x, μ):
 	    return μ.T@x - 0.5 * (μ.T@μ)
 
+	X_all, X_all2 = class_separation(X, labels)
+
 
 	if mode == "train":
-
-		X_all, X_all2 = class_separation(X, labels)
 
 		μ0 = []
 		μ1 = []
@@ -287,7 +287,10 @@ def mdc_euclidean(X, labels, mode = "train", μ0 = None, μ1 = None):
 		ε_ω1_rel = ω1_wrong/X.shape[0]
 		total_ε = (ω0_wrong + ω1_wrong)/X.shape[0]
 
-		return ε_ω0_rel, ε_ω1_rel, total_ε
+		C = np.array([[X_all2[1].shape[0],ω1_wrong],\
+		[ω0_wrong,X_all2[0].shape[0]]]) #Confusion matrix
+
+		return ε_ω0_rel, ε_ω1_rel, total_ε, C
 
 def mcd_mahalanobis(X, labels, mode = "train", μ0 = None, μ1 = None,
  C_inv_avg = None):
@@ -302,10 +305,9 @@ def mcd_mahalanobis(X, labels, mode = "train", μ0 = None, μ1 = None,
 
 	    return (μ@C_inv_avg@x - 0.5 * (μ@C_inv_avg@μ))
 
+	X_all, X_all2 = class_separation(X, labels)
 
 	if mode == "train":
-		X_all, X_all2 = class_separation(X, labels)
-
 		data_ω0 = X_all2[0][:,:-1]
 		data_ω1 = X_all2[1][:,:-1]
 		C_ω0 = np.cov(data_ω0.T)
@@ -356,7 +358,6 @@ def mcd_mahalanobis(X, labels, mode = "train", μ0 = None, μ1 = None,
 
 
 	elif mode == "test":
-
 		ω0_wrong = 0
 		ω1_wrong = 0
 
@@ -370,7 +371,10 @@ def mcd_mahalanobis(X, labels, mode = "train", μ0 = None, μ1 = None,
 		ε_ω1_rel = ω1_wrong/X.shape[0]
 		total_ε = (ω0_wrong + ω1_wrong)/X.shape[0]
 
-		return ε_ω0_rel, ε_ω1_rel, total_ε
+		C = np.array([[X_all2[1].shape[0],ω1_wrong],\
+		[ω0_wrong,X_all2[0].shape[0]]]) #Confusion matrix
+
+		return ε_ω0_rel, ε_ω1_rel, total_ε, C
 
 
 
@@ -474,29 +478,45 @@ def run(X, labels, n_sims, train_ω = None,
 			μ0, μ1 = mdc_euclidean(X_train, y_train)[3:]
 			εs_train.append(mdc_euclidean(X_train, y_train)[2])
 			εs_val.append(mdc_euclidean(X_val, y_val, mode = "val",\
-				μ0=μ0, μ1=μ1))
+				μ0=μ0, μ1=μ1)[2])
 		elif classifier == "mahalanobis":
 			μ0, μ1, C_inv_avg = mcd_mahalanobis(X_train, y_train)[3:]
 			εs_train.append(mcd_mahalanobis(X_train, y_train)[2])
 			εs_val.append(mcd_mahalanobis(X_val, y_val, mode = "val",\
-			 μ0=μ0, μ1=μ1, C_inv_avg=C_inv_avg))
+			 μ0=μ0, μ1=μ1, C_inv_avg=C_inv_avg)[2])
 	
 		if testing == True:
 			if classifier == "euclidean":
 				μ0, μ1 = mdc_euclidean(X_train, y_train)[3:]
-				εs_test.append(mdc_euclidean(X_test, y_test, mode = "test",\
-					μ0=μ0, μ1=μ1))
+				#Returning global error, and confusion matrix
+				ε, C = mdc_euclidean(X_test, y_test, mode = "test",\
+					μ0=μ0, μ1=μ1)[2:]
+				εs_test.append(ε)
+
 			elif classifier == "mahalanobis":
 				μ0, μ1, C_inv_avg = mcd_mahalanobis(X_train, y_train)[3:]
-				εs_test.append(mcd_mahalanobis(X_test, y_test, mode = "test",\
-				 μ0=μ0, μ1=μ1, C_inv_avg=C_inv_avg))
-
+				#Returning global error, and confusion matrix
+				ε, C = mcd_mahalanobis(X_test, y_test, mode = "test",\
+				 μ0=μ0, μ1=μ1, C_inv_avg=C_inv_avg)[2:]
+				εs_test.append(ε)
 
 	print(f"Training error: {np.mean(εs_train):.4f} ± {np.std(εs_train):.4f}")
 	print(f"Validation error: {np.mean(εs_val):.4f} ± {np.std(εs_val):.4f}")
 
 	if testing == True:
 		print(f"Testing error: {np.mean(εs_test):.4f} ± {np.std(εs_test):.4f}")
+		"""
+		In the form
+		[TP FN
+		 FP TN]
+		"""
+		print(f"Confusion matrix: {C}")
+		SS = C[0,0]/(C[0,0] + C[0,1]) #Sensitivity
+		SP = C[1,1]/(C[1,1] + C[1,0]) #Specificity
+		print(f"Sensitivity: {SS}")
+		print(f"Specificity: {SP}")
+	
+
 
 	τ_f = time.time()
 	Δτ = τ_f - τ_i

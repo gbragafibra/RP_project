@@ -441,7 +441,7 @@ def run(X, labels, n_sims, train_ω = None,
 	accounting for multiple 
 	simulations.
 	Don't want my testing set changing 
-	from simulation to simulation
+	from simulation to simulation.
 	"""
 	indices = np.random.permutation(X.shape[0])
 	test_indices = indices[train_size:]
@@ -452,6 +452,13 @@ def run(X, labels, n_sims, train_ω = None,
 		"""
 		Below without using sklearn.
 		Although it doesn't stratify
+		"""
+		"""
+		Not doing k-fold CV.
+		Doing random subsampling.
+		Don't get the assurance
+		that every sample eventually
+		gets into a validation set.
 		"""
 		train_val_indices = np.random.permutation(indices[:train_size])
 		val_indices = train_val_indices[:val_size]

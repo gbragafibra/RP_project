@@ -227,21 +227,17 @@ def mdc_euclidean(X, labels, mode = "train", μ0 = None, μ1 = None):
 	Includes training and testing modes.
 	"""
 	def g(x, μ):
-	    return μ.T@x - 0.5 * (μ.T@μ)
+		return μ.T@x - 0.5 * (μ.T@μ)
 
 	X_all, X_all2 = class_separation(X, labels)
 
 
 	if mode == "train":
 
-		μ0 = []
-		μ1 = []
-		for i in range(X_all.shape[1] - 1):
-			μ0.append(np.mean(X_all2[0].T[i]))
-			μ1.append(np.mean(X_all2[1].T[i]))
+		#Without last col
+		μ0 = np.mean(X_all2[0].T[:-1], axis = 1)
+		μ1 = np.mean(X_all2[1].T[:-1], axis = 1)
 
-		μ0 = np.array(μ0)
-		μ1 = np.array(μ1)
 
 		ω0_wrong = 0
 		ω1_wrong = 0
@@ -321,14 +317,9 @@ def mcd_mahalanobis(X, labels, mode = "train", μ0 = None, μ1 = None,
 		C_ω1 = np.cov(data_ω1.T)
 		C_inv_avg = np.linalg.inv((C_ω0 + C_ω1)/2)
 
-		μ0 = []
-		μ1 = []
-		for i in range(X_all.shape[1] - 1):
-			μ0.append(np.mean(X_all2[0].T[i]))
-			μ1.append(np.mean(X_all2[1].T[i]))
+		μ0 = np.mean(X_all2[0].T[:-1], axis = 1)
+		μ1 = np.mean(X_all2[1].T[:-1], axis = 1)
 
-		μ0 = np.array(μ0)
-		μ1 = np.array(μ1)
 
 		ω0_wrong = 0
 		ω1_wrong = 0

@@ -204,6 +204,12 @@ def redundancy_check(X, ε, labels):
 
 
 def class_separation(X, labels):
+	"""
+	Returns X_all with all features
+	and labels. And also returns X_all2
+	dictionary separated by classes.
+	"""
+
 	X_all = np.column_stack((X, labels))
 	X_all2 = {c: X_all[X_all[:, -1] == c] for c in labels}
 
@@ -218,11 +224,8 @@ def mdc_euclidean(X, labels, mode = "train", μ0 = None, μ1 = None):
 	and a total one
 	Includes training and testing modes.
 	"""
-	def g1(x, μ1):
-	    return μ1.T@x - 0.5 * (μ1.T@μ1)
-
-	def g2(x, μ2):
-	    return μ2.T@x - 0.5 * (μ2.T@μ2)
+	def g(x, μ):
+	    return μ.T@x - 0.5 * (μ.T@μ)
 
 
 	if mode == "train":
@@ -242,9 +245,9 @@ def mdc_euclidean(X, labels, mode = "train", μ0 = None, μ1 = None):
 		ω1_wrong = 0
 
 		for i in range(X.shape[0]):
-			if g1(X[i], μ0) > g2(X[i], μ1) and X_all[i][-1] != 0:
+			if g(X[i], μ0) > g(X[i], μ1) and X_all[i][-1] != 0:
 				ω0_wrong += 1
-			elif g2(X[i], μ1) > g1(X[i], μ0) and X_all[i][-1] != 1:
+			elif g(X[i], μ1) > g(X[i], μ0) and X_all[i][-1] != 1:
 				ω1_wrong += 1
 		
 		ε_ω0_rel = ω0_wrong/X.shape[0]
@@ -258,9 +261,9 @@ def mdc_euclidean(X, labels, mode = "train", μ0 = None, μ1 = None):
 		ω1_wrong = 0
 
 		for i in range(X.shape[0]):
-			if g1(X[i], μ0) > g2(X[i], μ1) and labels[i] != 0:
+			if g(X[i], μ0) > g(X[i], μ1) and labels[i] != 0:
 				ω0_wrong += 1
-			elif g2(X[i], μ1) > g1(X[i], μ0) and labels[i] != 1:
+			elif g(X[i], μ1) > g(X[i], μ0) and labels[i] != 1:
 				ω1_wrong += 1
 		
 		ε_ω0_rel = ω0_wrong/X.shape[0]
@@ -274,9 +277,9 @@ def mdc_euclidean(X, labels, mode = "train", μ0 = None, μ1 = None):
 		ω1_wrong = 0
 
 		for i in range(X.shape[0]):
-			if g1(X[i], μ0) > g2(X[i], μ1) and labels[i] != 0:
+			if g(X[i], μ0) > g(X[i], μ1) and labels[i] != 0:
 				ω0_wrong += 1
-			elif g2(X[i], μ1) > g1(X[i], μ0) and labels[i] != 1:
+			elif g(X[i], μ1) > g(X[i], μ0) and labels[i] != 1:
 				ω1_wrong += 1
 		
 		ε_ω0_rel = ω0_wrong/X.shape[0]
@@ -294,13 +297,9 @@ def mcd_mahalanobis(X, labels, mode = "train", μ0 = None, μ1 = None,
 	and a total one.
 	Includes training and testing modes.
 	"""
-	def g1(x, μ0, C_inv_avg): 
+	def g(x, μ, C_inv_avg): 
 
-	    return (μ0@C_inv_avg@x - 0.5 * (μ0@C_inv_avg@μ0))
-
-	def g2(x, μ1, C_inv_avg): 
-
-	    return (μ1@C_inv_avg@x - 0.5 * (μ1@C_inv_avg@μ1))
+	    return (μ@C_inv_avg@x - 0.5 * (μ@C_inv_avg@μ))
 
 
 	if mode == "train":
@@ -325,9 +324,9 @@ def mcd_mahalanobis(X, labels, mode = "train", μ0 = None, μ1 = None,
 		ω1_wrong = 0
 
 		for i in range(X.shape[0]):
-			if g1(X[i], μ0, C_inv_avg) > g2(X[i], μ1, C_inv_avg) and X_all[i][-1] != 0:
+			if g(X[i], μ0, C_inv_avg) > g(X[i], μ1, C_inv_avg) and X_all[i][-1] != 0:
 				ω0_wrong += 1
-			elif g2(X[i], μ1, C_inv_avg) > g1(X[i], μ0, C_inv_avg) and X_all[i][-1] != 1:
+			elif g(X[i], μ1, C_inv_avg) > g(X[i], μ0, C_inv_avg) and X_all[i][-1] != 1:
 				ω1_wrong += 1
 		
 		ε_ω0_rel = ω0_wrong/X.shape[0]
@@ -342,9 +341,9 @@ def mcd_mahalanobis(X, labels, mode = "train", μ0 = None, μ1 = None,
 		ω1_wrong = 0
 
 		for i in range(X.shape[0]):
-			if g1(X[i], μ0, C_inv_avg) > g2(X[i], μ1, C_inv_avg) and labels[i] != 0:
+			if g(X[i], μ0, C_inv_avg) > g(X[i], μ1, C_inv_avg) and labels[i] != 0:
 				ω0_wrong += 1
-			elif g2(X[i], μ1, C_inv_avg) > g1(X[i], μ0, C_inv_avg) and labels[i] != 1:
+			elif g(X[i], μ1, C_inv_avg) > g(X[i], μ0, C_inv_avg) and labels[i] != 1:
 				ω1_wrong += 1
 		
 		ε_ω0_rel = ω0_wrong/X.shape[0]
@@ -361,9 +360,9 @@ def mcd_mahalanobis(X, labels, mode = "train", μ0 = None, μ1 = None,
 		ω1_wrong = 0
 
 		for i in range(X.shape[0]):
-			if g1(X[i], μ0, C_inv_avg) > g2(X[i], μ1, C_inv_avg) and labels[i] != 0:
+			if g(X[i], μ0, C_inv_avg) > g(X[i], μ1, C_inv_avg) and labels[i] != 0:
 				ω0_wrong += 1
-			elif g2(X[i], μ1, C_inv_avg) > g1(X[i], μ0, C_inv_avg) and labels[i] != 1:
+			elif g(X[i], μ1, C_inv_avg) > g(X[i], μ0, C_inv_avg) and labels[i] != 1:
 				ω1_wrong += 1
 		
 		ε_ω0_rel = ω0_wrong/X.shape[0]

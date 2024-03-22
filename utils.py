@@ -18,17 +18,12 @@ def kaiser(λ_list):
 	according to the Kaiser test
 	"""
 
-	PC = 0
-
 	"""
 	Need to order λ_list (descending)
 	"""
-	λ_list = λ_list[::1]
+	λ_list_sort = np.sort(λ_list)[::-1]
 
-	for i in range(λ_list.shape[0]):
-		PC += 1
-		if λ_list[i] < 1:
-			break
+	PC = np.sum(λ_list_sort >= 1)
 
 	return PC
 
@@ -43,18 +38,21 @@ def scree(λ_list, ε):
 	compare to the difference
 	between consecutive eigenvalues
 	"""
-
-	PC = 0
-
 	"""
 	Need to order λ_list (descending)
 	"""
-	λ_list = λ_list[::1]
+	λ_list_sort = np.sort(λ_list)[::-1]
 
-	for i in range(λ_list.shape[0]):
-		PC += 1
-		if abs(λ_list[i-1] - λ_list[i]) < ε:
-			break
+	"""
+	Compute diferences between
+	consecutive eigenvals
+	"""
+	Δ = np.abs(np.diff(λ_list_sort))
+	
+	#Find the idx where Δ < ε
+	idx = np.argmax(Δ < ε)
+
+	PC = idx + 1 
 
 	return PC
 
@@ -71,7 +69,7 @@ def scale_σ(X):
 	return normalized_X
 
 
-def kept_var(λ_list, n):
+def kept_σ(λ_list, n):
 	"""
 	Takes a list of eigenvalues
 	Computes the kept variance
@@ -81,14 +79,14 @@ def kept_var(λ_list, n):
 	"""
 	Need to order λ_list (descending)
 	"""
-	λ_list = λ_list[::1]
+	λ_list_sort = np.sort(λ_list)[::-1]
 
-	kept_var = 0 
+	# For the first n features
+	kept_σ = np.sum(λ_list_sort[:n]**2)
 
-	for i in range(0,n):
-		kept_var += λ_list[i]**2
+	total_σ = np.sum(λ_list_sort**2)
 
-	return (kept_var/np.sum(λ_list**2))
+	return kept_σ/total_σ
 
 
 def initial_processing(file):
@@ -239,14 +237,15 @@ def mdc_euclidean(X, labels, mode = "train", μ0 = None, μ1 = None):
 		μ1 = np.mean(X_all2[1].T[:-1], axis = 1)
 
 
-		ω0_wrong = 0
-		ω1_wrong = 0
-
-		for i in range(X.shape[0]):
-			if g(X[i], μ0) > g(X[i], μ1) and X_all[i][-1] != 0:
-				ω0_wrong += 1
-			elif g(X[i], μ1) > g(X[i], μ0) and X_all[i][-1] != 1:
-				ω1_wrong += 1
+		"""
+		Gives an array with boolean values
+		and sums True instances.
+		If the condition between ()
+		is met, we have a True instance
+		for that sample.
+		"""
+		ω0_wrong = np.sum((g(X.T, μ0) > g(X.T, μ1)) & (labels != 0))
+		ω1_wrong = np.sum((g(X.T, μ1) > g(X.T, μ0)) & (labels != 1))
 		
 		ε_ω0_rel = ω0_wrong/X.shape[0]
 		ε_ω1_rel = ω1_wrong/X.shape[0]
@@ -255,14 +254,11 @@ def mdc_euclidean(X, labels, mode = "train", μ0 = None, μ1 = None):
 		return ε_ω0_rel, ε_ω1_rel, total_ε, μ0, μ1
 
 	elif mode == "val":
-		ω0_wrong = 0
-		ω1_wrong = 0
+		
 
-		for i in range(X.shape[0]):
-			if g(X[i], μ0) > g(X[i], μ1) and labels[i] != 0:
-				ω0_wrong += 1
-			elif g(X[i], μ1) > g(X[i], μ0) and labels[i] != 1:
-				ω1_wrong += 1
+		ω0_wrong = np.sum((g(X.T, μ0) > g(X.T, μ1)) & (labels != 0))
+		ω1_wrong = np.sum((g(X.T, μ1) > g(X.T, μ0)) & (labels != 1))
+		
 		
 		ε_ω0_rel = ω0_wrong/X.shape[0]
 		ε_ω1_rel = ω1_wrong/X.shape[0]
@@ -271,21 +267,20 @@ def mdc_euclidean(X, labels, mode = "train", μ0 = None, μ1 = None):
 		return ε_ω0_rel, ε_ω1_rel, total_ε	
 
 	elif mode == "test":
-		ω0_wrong = 0
-		ω1_wrong = 0
+
+		ω0_wrong = np.sum((g(X.T, μ0) > g(X.T, μ1)) & (labels != 0))
+		ω1_wrong = np.sum((g(X.T, μ1) > g(X.T, μ0)) & (labels != 1))
+		
 
 		"""
 		To get ROC and compute AUC
+		Vectorized form;
+		Need to transpose X, in order
+		to have each sample representing
+		a col.
 		"""
-		ω_scores = []
-		for i in range(X.shape[0]):
-			
-			ω_scores.append(g(X[i], μ1) - g(X[i], μ0))
-			if g(X[i], μ0) > g(X[i], μ1) and labels[i] != 0:
-				ω0_wrong += 1
-			elif g(X[i], μ1) > g(X[i], μ0) and labels[i] != 1:
-				ω1_wrong += 1
-		
+		ω_scores = g(X.T, μ1) - g(X.T, μ0)
+
 		ε_ω0_rel = ω0_wrong/X.shape[0]
 		ε_ω1_rel = ω1_wrong/X.shape[0]
 		total_ε = (ω0_wrong + ω1_wrong)/X.shape[0]
@@ -320,15 +315,11 @@ def mcd_mahalanobis(X, labels, mode = "train", μ0 = None, μ1 = None,
 		μ0 = np.mean(X_all2[0].T[:-1], axis = 1)
 		μ1 = np.mean(X_all2[1].T[:-1], axis = 1)
 
-
-		ω0_wrong = 0
-		ω1_wrong = 0
-
-		for i in range(X.shape[0]):
-			if g(X[i], μ0, C_inv_avg) > g(X[i], μ1, C_inv_avg) and X_all[i][-1] != 0:
-				ω0_wrong += 1
-			elif g(X[i], μ1, C_inv_avg) > g(X[i], μ0, C_inv_avg) and X_all[i][-1] != 1:
-				ω1_wrong += 1
+		ω0_wrong = np.sum((g(X.T, μ0, C_inv_avg) > g(X.T, μ1, C_inv_avg)) &\
+		 (labels != 0))
+		ω1_wrong = np.sum((g(X.T, μ1, C_inv_avg) > g(X.T, μ0, C_inv_avg)) &\
+		 (labels != 1))
+		
 		
 		ε_ω0_rel = ω0_wrong/X.shape[0]
 		ε_ω1_rel = ω1_wrong/X.shape[0]
@@ -338,14 +329,10 @@ def mcd_mahalanobis(X, labels, mode = "train", μ0 = None, μ1 = None,
 
 	elif mode == "val":
 
-		ω0_wrong = 0
-		ω1_wrong = 0
-
-		for i in range(X.shape[0]):
-			if g(X[i], μ0, C_inv_avg) > g(X[i], μ1, C_inv_avg) and labels[i] != 0:
-				ω0_wrong += 1
-			elif g(X[i], μ1, C_inv_avg) > g(X[i], μ0, C_inv_avg) and labels[i] != 1:
-				ω1_wrong += 1
+		ω0_wrong = np.sum((g(X.T, μ0, C_inv_avg) > g(X.T, μ1, C_inv_avg)) &\
+		 (labels != 0))
+		ω1_wrong = np.sum((g(X.T, μ1, C_inv_avg) > g(X.T, μ0, C_inv_avg)) &\
+		 (labels != 1))
 		
 		ε_ω0_rel = ω0_wrong/X.shape[0]
 		ε_ω1_rel = ω1_wrong/X.shape[0]
@@ -356,21 +343,16 @@ def mcd_mahalanobis(X, labels, mode = "train", μ0 = None, μ1 = None,
 
 
 	elif mode == "test":
-		ω0_wrong = 0
-		ω1_wrong = 0
+
+		ω0_wrong = np.sum((g(X.T, μ0, C_inv_avg) > g(X.T, μ1, C_inv_avg)) &\
+		 (labels != 0))
+		ω1_wrong = np.sum((g(X.T, μ1, C_inv_avg) > g(X.T, μ0, C_inv_avg)) &\
+		 (labels != 1))
 
 		"""
 		To get ROC and compute AUC
 		"""
-		ω_scores = []
-		for i in range(X.shape[0]):
-			
-			ω_scores.append(g(X[i], μ1, C_inv_avg) - g(X[i], μ0, C_inv_avg))
-
-			if g(X[i], μ0, C_inv_avg) > g(X[i], μ1, C_inv_avg) and labels[i] != 0:
-				ω0_wrong += 1
-			elif g(X[i], μ1, C_inv_avg) > g(X[i], μ0, C_inv_avg) and labels[i] != 1:
-				ω1_wrong += 1
+		ω_scores = g(X.T, μ1, C_inv_avg) - g(X.T, μ0, C_inv_avg)
 		
 		ε_ω0_rel = ω0_wrong/X.shape[0]
 		ε_ω1_rel = ω1_wrong/X.shape[0]
@@ -393,7 +375,7 @@ def PCA(X, test = None):
 	(kaiser, scree)
 	"""
 
-	λ_vals, λ_vecs = compute_λ_cov(X)[1], compute_λ_cov(X)[2]
+	λ_vals, λ_vecs = compute_λ_cov(X)[1:]
 
 	"""
 	Get the number of
@@ -409,16 +391,14 @@ def PCA(X, test = None):
 	"""
 	In descending order
 	Get the indexes of the
-	largest λ_vals
+	largest λ_vals, and also
+	taking into account the
+	dims originated by each 
+	respective test.
 	"""
-	λ_id = λ_vals.argsort()[::-1]
-	"""
-	Updates the λ_vecs given the indexes
-	obtained before, and also taking into
-	account the dims originated by each 
-	respective test
-	"""
-	λ_vecs_updated = λ_vecs[:, λ_id][:, :dims]
+	λ_id = np.argsort(λ_vals)[::-1][:dims]
+
+	λ_vecs_updated = λ_vecs[:, λ_id]
 
 	#Projection
 	X_new = np.dot(scale_σ(X), λ_vecs_updated)

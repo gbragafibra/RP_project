@@ -461,13 +461,15 @@ def run(X, labels, n_sims, train_ω = None,
 
 
 		if classifier == "euclidean":
-			μ0, μ1 = mdc_euclidean(X_train, y_train)[3:]
-			εs_train.append(mdc_euclidean(X_train, y_train)[2])
+			ε, μ0, μ1 = mdc_euclidean(X_train, y_train)[2:]
+			εs_train.append(ε)
 			εs_val.append(mdc_euclidean(X_val, y_val, mode = "val",\
 				μ0=μ0, μ1=μ1)[2])
+
+		
 		elif classifier == "mahalanobis":
-			μ0, μ1, C_inv_avg = mcd_mahalanobis(X_train, y_train)[3:]
-			εs_train.append(mcd_mahalanobis(X_train, y_train)[2])
+			ε, μ0, μ1, C_inv_avg = mcd_mahalanobis(X_train, y_train)[2:]
+			εs_train.append(ε)
 			εs_val.append(mcd_mahalanobis(X_val, y_val, mode = "val",\
 			 μ0=μ0, μ1=μ1, C_inv_avg=C_inv_avg)[2])
 	
@@ -477,14 +479,12 @@ def run(X, labels, n_sims, train_ω = None,
 
 	if testing == True:
 		if classifier == "euclidean":
-			μ0, μ1 = mdc_euclidean(X_train, y_train)[3:]
 			#Returning global error, and confusion matrix
 			ε_test, C, ω_scores = mdc_euclidean(X_test, y_test, mode = "test",\
 				μ0=μ0, μ1=μ1)[2:]
 			
 
 		elif classifier == "mahalanobis":
-			μ0, μ1, C_inv_avg = mcd_mahalanobis(X_train, y_train)[3:]
 			#Returning global error, and confusion matrix
 			ε_test, C, ω_scores = mcd_mahalanobis(X_test, y_test, mode = "test",\
 			 μ0=μ0, μ1=μ1, C_inv_avg=C_inv_avg)[2:]

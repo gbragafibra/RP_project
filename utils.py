@@ -567,16 +567,11 @@ def LDA(X, labels):
 	Computing the within the class
 	scatter matrix (two classes)
 	"""
-	S0 = np.zeros((X.shape[1], X.shape[1]))
-	S1 = np.zeros((X.shape[1], X.shape[1]))
-	
-	for i in range(X_all2[0].shape[0]):
-		S0 += np.dot((X_all2[0][i,:-1] - μ0),\
-			(X_all2[0][i,:-1] - μ0).T) 
-		
-	for i in range(X_all2[1].shape[0]):
-		S1 += np.dot((X_all2[1][i,:-1] - μ0),\
-			(X_all2[1][i,:-1] - μ0).T)
+
+	S0 = np.dot((X_all2[0][:, :-1] - μ0).T,\
+	 (X_all2[0][:, :-1] - μ0))
+	S1 = np.dot((X_all2[1][:, :-1] - μ1).T,\
+	 (X_all2[1][:, :-1] - μ1))
 
 	Sw = S0 + S1
 
@@ -593,5 +588,4 @@ def LDA(X, labels):
 	
 	w = w.reshape(w.shape[0],1)
 	X_new = np.dot(w.T, X.T)
-
 	return X_new.T

@@ -562,16 +562,28 @@ def LDA(X, labels):
 	μ1 = np.mean(X_all2[1].T[:-1], axis = 1)
 
 
-
 	"""
 	Computing the within the class
 	scatter matrix (two classes)
+	"""
+
+	"""
+	If χ is the number of features,
+	both S0 and S1 should have
+	shapes (χ, χ).
+	In order for this to happen,
+	the first argument of np.dot()
+	is the one needing transposed.
+	Otherwise, we have S0 and S1 with
+	shapes (n, n), n being the number
+	of samples associated to each class.
 	"""
 
 	S0 = np.dot((X_all2[0][:, :-1] - μ0).T,\
 	 (X_all2[0][:, :-1] - μ0))
 	S1 = np.dot((X_all2[1][:, :-1] - μ1).T,\
 	 (X_all2[1][:, :-1] - μ1))
+
 
 	Sw = S0 + S1
 

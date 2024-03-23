@@ -48,12 +48,15 @@ def scree(λ_list, ε):
 	consecutive eigenvals
 	"""
 	Δ = np.abs(np.diff(λ_list_sort))
-	
-	#Find the idx where Δ < ε
-	idx = np.argmax(Δ < ε)
-
-	PC = idx + 1 
-
+	"""
+	If none smaller than ε,
+	use all features
+	"""
+	if np.all(Δ < ε):
+		PC = len(λ_list)
+	else:
+		#Find the idx where Δ < ε
+		PC = np.argmax(Δ < ε)
 	return PC
 
 def scale_σ(X):
@@ -386,7 +389,7 @@ def PCA(X, test = None):
 	if test == kaiser:
 		dims = kaiser(λ_vals)
 	elif test == scree:
-		dims = scree(λ_vals, 1)
+		dims = scree(λ_vals, 1e-1)
 
 	"""
 	In descending order

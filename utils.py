@@ -500,10 +500,16 @@ def run(X, labels, n_sims, train_ω = None,
 		 FP TN]
 		"""
 		print(f"Confusion matrix: {C}")
-		SS = C[0,0]/(C[0,0] + C[0,1]) #Sensitivity
+		AC = (C[0,0] + C[1,1])/np.sum(C) #Accuracy
+		PR = (C[0,0])/(C[0,0] + C[1,0]) #Precision
+		SS = C[0,0]/(C[0,0] + C[0,1]) #Sensitivity, or Recall
 		SP = C[1,1]/(C[1,1] + C[1,0]) #Specificity
+		print(f"Accuracy: {AC:.4f}")
+		print(f"Precision: {PR:.4f}")
 		print(f"Sensitivity: {SS:.4f}")
 		print(f"Specificity: {SP:.4f}")
+		F1_score = 2 * (PR * SS)/(PR + SS)
+		print(f"F1 score: {F1_score:.4f}")
 
 		fpr, tpr, thresholds = roc_curve(y_test, ω_scores)
 		AUC = auc(fpr, tpr)

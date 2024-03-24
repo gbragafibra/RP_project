@@ -288,8 +288,9 @@ def mdc_euclidean(X, labels, mode = "train", μ0 = None, μ1 = None):
 		ε_ω1_rel = ω1_wrong/X.shape[0]
 		total_ε = (ω0_wrong + ω1_wrong)/X.shape[0]
 
-		C = np.array([[X_all2[1].shape[0],ω1_wrong],\
-		[ω0_wrong,X_all2[0].shape[0]]]) #Confusion matrix
+
+		C = np.array([[X_all2[1].shape[0] - ω1_wrong,ω0_wrong],\
+		[ω1_wrong,X_all2[0].shape[0]] - ω0_wrong]) #Confusion matrix
 
 		return ε_ω0_rel, ε_ω1_rel, total_ε, C, ω_scores
 
@@ -361,8 +362,8 @@ def mcd_mahalanobis(X, labels, mode = "train", μ0 = None, μ1 = None,
 		ε_ω1_rel = ω1_wrong/X.shape[0]
 		total_ε = (ω0_wrong + ω1_wrong)/X.shape[0]
 
-		C = np.array([[X_all2[1].shape[0],ω1_wrong],\
-		[ω0_wrong,X_all2[0].shape[0]]]) #Confusion matrix
+		C = np.array([[X_all2[1].shape[0] - ω1_wrong,ω0_wrong],\
+		[ω1_wrong,X_all2[0].shape[0]] - ω0_wrong]) #Confusion matrix
 
 		return ε_ω0_rel, ε_ω1_rel, total_ε, C, ω_scores
 
@@ -494,11 +495,8 @@ def run(X, labels, n_sims, train_ω = None,
 			
 
 		print(f"Testing error: {ε_test:.4f}")
-		"""
-		In the form
-		[TP FN
-		 FP TN]
-		"""
+
+		print("In the form:\\[TP FN\\FP TN]")
 		print(f"Confusion matrix: {C}")
 		AC = (C[0,0] + C[1,1])/np.sum(C) #Accuracy
 		PR = (C[0,0])/(C[0,0] + C[1,0]) #Precision

@@ -305,7 +305,7 @@ def mcd_mahalanobis(X, labels, mode = "train", μ0 = None, μ1 = None,
 	"""
 	def g(x, μ, C_inv_avg): 
 
-	    return (μ@C_inv_avg@x - 0.5 * (μ@C_inv_avg@μ))
+	    return (μ.T@C_inv_avg@x - 0.5 * (μ.T@C_inv_avg@μ))
 
 	X_all, X_all2 = class_separation(X, labels)
 

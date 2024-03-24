@@ -496,7 +496,7 @@ def run(X, labels, n_sims, train_ω = None,
 
 		print(f"Testing error: {ε_test:.4f}")
 
-		print("In the form:\\[TP FN\\FP TN]")
+		print("In the form:\n[TP FN\nFP TN]")
 		print(f"Confusion matrix: {C}")
 		AC = (C[0,0] + C[1,1])/np.sum(C) #Accuracy
 		PR = (C[0,0])/(C[0,0] + C[1,0]) #Precision
